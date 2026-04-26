@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdn.jsdelivr.net/npm/p5@2.2.3/lib/p5.js"></script>
+  
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <main></main>
+  
+  <script>
+    let font;
+    let word;
+    let secondword;
+    let startbutton;
+    let targetPoints; // how many points we aim to create on the top and bottom 
+    let weight;
+    let points1;
+    let points2;
+    let progress = 0;
+    let amigoing;
+    let shuffletoggle;
+    let overlappingtoggle;
+    let load;
+    let reversetoggle;
+
+    async function setup() {
+      createCanvas(1000, 600);
+      
+      // Loaded from a CDN so you don't need a local font file!
+      font = await loadFont('https://cdnjs.cloudflare.com/ajax/libs/topcoat/0.8.0/font/SourceSansPro-Regular.otf');
+      
+      textSize(100);
+      background(256);
+      
+      word = createInput();
+      word.position(0,0);
+      //word.changed(drawplainly);
+      
+      secondword = createInput();
+      secondword.position(200,0);
+      secondword.changed(drawplainly);
+      
+      startbutton = createButton('start');
+      startbutton.mousePressed(moveIt);
+      startbutton.position(400,0);
+      
+      load = createButton('update');
+      load.mousePressed(drawplainly);
+      load.position(440,0);
+      
+      shuffletoggle = createCheckbox('shuffle');
+      shuffletoggle.position(580,0);
+      
+      overlappingtoggle = createCheckbox('below');
+      overlappingtoggle.position(520,0);
+      
+      reversetoggle = createCheckbox('flip');
+      reversetoggle.position(640,0);
+      
+      targetPoints = createSlider(0,10000,5000,0);
+      targetPoints.position(0,575);
+      targetPoints.size(600);
+      targetPoints.changed(drawplainly);
+      
+      weight = createSlider(0,8,2.5,0);
+      weight.position(0,555);
+      weight.size(600);
+      weight.changed(drawplainly);
+    }
+
+    function drawplainly() {
+      textFont(font);
+      textSize(100);
+      
+      // Get the point array.
+      let width1 = (95000/(textWidth(word.value())));
+      if ((95000/(textWidth(secondword.value()))) < width1) {
+        width1 = (95000/(textWidth(secondword.value())));
+      }
+      textSize(width1);
+      
+      if (textSize() > 250){
+        textSize(250);
+      }
+      background(256);
+      
+      let howmanypoints1 = font.textToPoints(word.value(), 25, 200, { sampleFactor: 10 });
+      points1 = font.textToPoints(word.value(), 25, 200, { sampleFactor: (targetPoints.value()/howmanypoints1.length*10) });
+      let howmanypoints2 = font.textToPoints(secondword.value(), 25, 200, { sampleFactor: 10 });
+      
+      if (overlappingtoggle.checked()){
+        points2 = font.textToPoints(secondword.value(), 25, 400, { sampleFactor: (targetPoints.value()/howmanypoints2.length*10) });
+      } else {
+        points2 = font.textToPoints(secondword.value(), 25, 200, { sampleFactor: (targetPoints.value()/howmanypoints2.length*10) });
+      }
+      
+      textSize(20);
+      
+      if (points1.length > points2.length) {
+        let diff = points1.length - points2.length;
+        for (let i = 0; i < diff; i++) {
+          let location = floor(random(1,points2.length-2));
+          points2.splice(location,0,points2[location]);
+        }
+      } else {
+        let diff = -points1.length + points2.length;
+        for (let i = 0; i < diff; i++) {
+          let location = floor(random(1,points1.length-2));
+          points1.splice(location,0,points1[location]);
+        }
+      }
+      
+      text(howmanypoints1.length,0,500);
+      text(points1.length,0,517);
+      text(howmanypoints2.length,0,534);
+      text(points2.length,0,551);
+      
+      for (let p of points1) {
+        strokeWeight(weight.value());
+        point(p.x, p.y);
+      }
+      
+      //for (let p of points2) {
+        //strokeWeight(weight.value())
+        //point(p.x, p.y);
+      //}
+      
+      if (reversetoggle.checked()){
+        points2.reverse();
+      }
+      if (shuffletoggle.checked()){
+        shuffle(points2,true);
+      }
+    }
+
+    function moveIt(){
+      drawplainly();
+      amigoing = true;
+    }
+
+    function drawAlong(howFar) {
+      //draws all the points as far along as you say (0-1)
+      for (let i=0; i<points1.length; i++) {
+        point((howFar*points2[i].x+(1-howFar)*points1[i].x), (howFar*points2[i].y+(1-howFar)*points1[i].y));
+      }
+    }
+
+    function draw(){
+      if (amigoing){
+        if (progress <= 1.001){
+          background(256);
+          drawAlong(progress);
+          progress = progress + 0.01;
+        } else {
+          amigoing = false;
+          progress = 0;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
